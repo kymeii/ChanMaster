@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>缠论</title>
+</head>
+<body>
+    <div>
+        序号:<span id="no"></span>
+        时间:<span id="time"></span>
+        <!--<br>-->
+        开盘:<span id="open"></span>
+        <!--<br>-->
+        收盘:<span id="close"></span>
+        <!--<br>-->
+        最高:<span id="high"></span>
+        <!--<br>-->
+        最低:<span id="low"></span>
+        <!--<br>-->
+    </div>
+    <div style="width:100%;overflow-x: scroll;">
+    <canvas id="kline1" width="1000" height="600"></canvas>
+    </div>
+    <!--<canvas id="kline2" width="1000" height="600"></canvas>-->
+
+    <script>
+
+        $ = function(selector){
+            return document.querySelector(selector);
+        }
+
+        function getPointOnCanvas(canvas, x, y) {
+			var bbox = canvas.getBoundingClientRect();
+			return { x: x - bbox.left * (canvas.width  / bbox.width),
+					y: y - bbox.top  * (canvas.height / bbox.height)
+					};
+		}
+
+		var data;
+        var mouseLoc;
+
+        function drawkline(canvas){
+            var kline = data.kline;
+            var dataLength = kline.length;
+
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            var width = canvas.width;
+            var height = canvas.height;
+            var itemWidth = canvas.itemWidth;
+
+            var highest = kline[0].high;
+            var lowest = kline[0].low;
+            for (var index in kline){
+                var d = kline[index];
+                if (highest < d.high){
+                    highest = d.high;
+                }
+                if (lowest > d.low){
+                    lowest = d.low;
+                }
+            }
+            var itemHeight =  height / (highest - lowest);
+
+
+            for (var index in kline){
+                var d = kline[index];
+                var low = (d.low - lowest) * itemHeight;
+                var high = (d.high - lowest) * itemHeight;
+                var open = (d.open - lowest) * itemHeight;
+                var close = (d.close - lowest) * itemHeight;
+                var left = index * itemWidth;
+                if (d.open <= d.close) {
+                    ctx.fillStyle = "red";
+                } else {
+                    ctx.fillStyle = "green";
+                }
+                if (open == close ){
+                    ctx.fillRect(left, height - open, itemWidth-1, 1);
+                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - open);
+                    ctx.fillRect(left + itemWidth/2, height - open, 1, open - low);
+                } else if (open < close){
+                    ctx.fillRect(left, height - close, itemWidth-1, close-open);
+                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - close);
+                    ctx.fillRect(left + itemWidth/2, height - open, 1, open - low);
+                } else if (open > close){
+                    ctx.fillRect(left, height - open, itemWidth-1, open-close);
+                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - open);
+                    ctx.fillRect(left + itemWidth/2, height - close, 1, close - low);
+                }
+                if (d.includeTail){
+                    ctx.fillStyle = 'rgba(1,1,1,0.5)';
+
+                    var includeIndex = d.includeIndex;
+                    var left = includeIndex * itemWidth;
+                    var high = (d.includeHigh - lowest) * itemHeight;
+                    var low = (d.includeLow - lowest) * itemHeight;
+                    ctx.fillRect(left, height - high, (index - includeIndex+1) * itemWidth , high - low);
+                }
+
+                ctx.fillStyle = 'black';
+                if (d.fenxing == 1){
+                    // 顶分
+                    ctx.fillText("顶",left, height - high - 10);
+                } else if (d.fenxing == 2){
+                    ctx.fillText("底",left, height - low + 20);
+                }
+             }
+
+             if (mouseLoc) {
+                ctx.fillStyle = 'black';
+                var index = parseInt(mouseLoc.x / itemWidth);
+                var d = kline[index];
+                var left = (index+0.5) * itemWidth;
+                ctx.fillRect(left, 0, 0.5, height);
+                ctx.fillRect(0, mouseLoc.y, width, 0.5);
+                var curPrice = (highest - lowest) * (height - mouseLoc.y) / height + lowest;
+                ctx.fillText(curPrice,left, mouseLoc.y);
+            }
+
+            var pens = data.pens;
+            for (var index in pens){
+                var pen = pens[index];
+                var startKline = kline[pen.start];
+                var endKline = kline[pen.end];
+                var startX = (pen.start + 0.5)* itemWidth;
+                var startY = startKline.fenxing == 1 ? startKline.includeHigh : startKline.includeLow;
+                startY = (highest - startY) * itemHeight;
+                var endX = (pen.end + 0.5)* itemWidth;
+                var endY = endKline.fenxing == 1 ? endKline.includeHigh : endKline.includeLow;
+                endY = (highest - endY) * itemHeight;
+
+                console.log(startX,startY,endX,endY);
+                ctx.stokeStyle = 'yellow';
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);//设置起点
+                ctx.lineTo(endX, endY);//画线
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+
+        async function a() {
+            var res =  await fetch("data.json");
+            data = await res.json();
+            kline = data.kline
+            var canvas = document.getElementById('kline1');
+            canvas.itemWidth =  canvas.width / kline.length;
+
+            canvas.addEventListener('mousemove', function(event) {
+                    var x = event.pageX;
+                    var y = event.pageY;
+                    var canvas = event.target;
+                    mouseLoc = getPointOnCanvas(canvas, x, y);
+
+                    var index = parseInt(mouseLoc.x / canvas.itemWidth);
+                    var d = kline[index];
+                    /**
+                    if ( $("#time").innerText == d.day){
+                        return;
+                    }
+                    **/
+                    $("#no").innerText = index;
+                    $("#time").innerText = d.day;
+                    $("#open").innerText = d.open;
+                    $("#close").innerText = d.close;
+                    $("#high").innerText = d.high;
+                    $("#low").innerText = d.low;
+
+                    drawkline(canvas);
+             },false);
+            drawkline(canvas);
+        }
+        a();
+
+    </script>
+
+</body>
+</html>
