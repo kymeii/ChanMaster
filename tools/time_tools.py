@@ -38,3 +38,10 @@ def date2timestamp(date_param):
     :return:
     """
     return int(time.mktime(date_param.timetuple()))
+
+
+def m1_2_m5(m1: datetime.datetime):
+    return m1.replace(minute=m1.minute - m1.minute % 5)
+
+def m5_2_m30(m1: datetime.datetime):
+    return m1.replace(minute=m1.minute - m1.minute % 30)

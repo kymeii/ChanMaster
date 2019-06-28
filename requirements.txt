@@ -1,2 +1,6 @@
 pandas
 pandas-datareader
+tqsdk
+sqlalchemy
+flask
+flask_cors

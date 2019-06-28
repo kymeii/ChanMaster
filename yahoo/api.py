@@ -64,7 +64,7 @@ def getKLineData(stock_code, scale, start_date, end_date):
     response = s.get(url, headers={'Connection': 'keep-alive',
                                    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"})
     contents = response.json()
-    print response.headers
+    print(response.headers)
     app_log.info("REQUEST END:\n%s" % response)
 
     chart = contents["chart"]

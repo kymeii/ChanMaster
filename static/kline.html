@@ -5,177 +5,243 @@
     <title>缠论</title>
 </head>
 <body>
-    <div>
-        序号:<span id="no"></span>
-        时间:<span id="time"></span>
-        <!--<br>-->
-        开盘:<span id="open"></span>
-        <!--<br>-->
-        收盘:<span id="close"></span>
-        <!--<br>-->
-        最高:<span id="high"></span>
-        <!--<br>-->
-        最低:<span id="low"></span>
-        <!--<br>-->
-    </div>
-    <div style="width:100%;overflow-x: scroll;">
-    <canvas id="kline1" width="1000" height="600"></canvas>
-    </div>
-    <!--<canvas id="kline2" width="1000" height="600"></canvas>-->
+<div>
+    序号:<span id="no"></span>
+    时间:<span id="time"></span>
+    <!--<br>-->
+    开盘:<span id="open"></span>
+    <!--<br>-->
+    收盘:<span id="close"></span>
+    <!--<br>-->
+    最高:<span id="high"></span>
+    <!--<br>-->
+    最低:<span id="low"></span>
+    次级别笔序号:<span id="subPenIndex"></span>
+    <!--<br>-->
+</div>
+<div style="width:100%;overflow-x: scroll;">
+    <canvas id="kline1" width="5000" height="600"></canvas>
+</div>
+<!--<canvas id="kline2" width="1000" height="600"></canvas>-->
 
-    <script>
+<script>
 
-        $ = function(selector){
-            return document.querySelector(selector);
-        }
+    MINUTE_1 = "1m";
+    MINUTE_5 = "5m";
+    MINUTE_30 = "30m";
+    const LEVEL = MINUTE_5;
 
-        function getPointOnCanvas(canvas, x, y) {
-			var bbox = canvas.getBoundingClientRect();
-			return { x: x - bbox.left * (canvas.width  / bbox.width),
-					y: y - bbox.top  * (canvas.height / bbox.height)
-					};
-		}
+    $ = function (selector) {
+        return document.querySelector(selector);
+    }
 
-		var data;
-        var mouseLoc;
+    function getPointOnCanvas(canvas, x, y) {
+        var bbox = canvas.getBoundingClientRect();
+        return {
+            x: x - bbox.left * (canvas.width / bbox.width),
+            y: y - bbox.top * (canvas.height / bbox.height)
+        };
+    }
 
-        function drawkline(canvas){
-            var kline = data.kline;
-            var dataLength = kline.length;
+    var kline;
+    var pens;
+    var subPens;
+    var subCentres;
+    let barDict = {};
+    let penDict = {};
+    var mouseLoc;
 
-            var ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            var width = canvas.width;
-            var height = canvas.height;
-            var itemWidth = canvas.itemWidth;
+    function drawkline(canvas) {
 
-            var highest = kline[0].high;
-            var lowest = kline[0].low;
-            for (var index in kline){
-                var d = kline[index];
-                if (highest < d.high){
-                    highest = d.high;
-                }
-                if (lowest > d.low){
-                    lowest = d.low;
-                }
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        var width = canvas.width;
+        var height = canvas.height;
+        var itemWidth = canvas.itemWidth;
+
+        var highest = kline[0].high_price;
+        var lowest = kline[0].low_price;
+        for (var index in kline) {
+            var d = kline[index];
+            if (highest < d.high_price) {
+                highest = d.high_price;
             }
-            var itemHeight =  height / (highest - lowest);
-
-
-            for (var index in kline){
-                var d = kline[index];
-                var low = (d.low - lowest) * itemHeight;
-                var high = (d.high - lowest) * itemHeight;
-                var open = (d.open - lowest) * itemHeight;
-                var close = (d.close - lowest) * itemHeight;
-                var left = index * itemWidth;
-                if (d.open <= d.close) {
-                    ctx.fillStyle = "red";
-                } else {
-                    ctx.fillStyle = "green";
-                }
-                if (open == close ){
-                    ctx.fillRect(left, height - open, itemWidth-1, 1);
-                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - open);
-                    ctx.fillRect(left + itemWidth/2, height - open, 1, open - low);
-                } else if (open < close){
-                    ctx.fillRect(left, height - close, itemWidth-1, close-open);
-                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - close);
-                    ctx.fillRect(left + itemWidth/2, height - open, 1, open - low);
-                } else if (open > close){
-                    ctx.fillRect(left, height - open, itemWidth-1, open-close);
-                    ctx.fillRect(left + itemWidth/2, height - high, 1, high - open);
-                    ctx.fillRect(left + itemWidth/2, height - close, 1, close - low);
-                }
-                if (d.includeTail){
-                    ctx.fillStyle = 'rgba(1,1,1,0.5)';
-
-                    var includeIndex = d.includeIndex;
-                    var left = includeIndex * itemWidth;
-                    var high = (d.includeHigh - lowest) * itemHeight;
-                    var low = (d.includeLow - lowest) * itemHeight;
-                    ctx.fillRect(left, height - high, (index - includeIndex+1) * itemWidth , high - low);
-                }
-
-                ctx.fillStyle = 'black';
-                if (d.fenxing == 1){
-                    // 顶分
-                    ctx.fillText("顶",left, height - high - 10);
-                } else if (d.fenxing == 2){
-                    ctx.fillText("底",left, height - low + 20);
-                }
-             }
-
-             if (mouseLoc) {
-                ctx.fillStyle = 'black';
-                var index = parseInt(mouseLoc.x / itemWidth);
-                var d = kline[index];
-                var left = (index+0.5) * itemWidth;
-                ctx.fillRect(left, 0, 0.5, height);
-                ctx.fillRect(0, mouseLoc.y, width, 0.5);
-                var curPrice = (highest - lowest) * (height - mouseLoc.y) / height + lowest;
-                ctx.fillText(curPrice,left, mouseLoc.y);
-            }
-
-            var pens = data.pens;
-            for (var index in pens){
-                var pen = pens[index];
-                var startKline = kline[pen.start];
-                var endKline = kline[pen.end];
-                var startX = (pen.start + 0.5)* itemWidth;
-                var startY = startKline.fenxing == 1 ? startKline.includeHigh : startKline.includeLow;
-                startY = (highest - startY) * itemHeight;
-                var endX = (pen.end + 0.5)* itemWidth;
-                var endY = endKline.fenxing == 1 ? endKline.includeHigh : endKline.includeLow;
-                endY = (highest - endY) * itemHeight;
-
-                console.log(startX,startY,endX,endY);
-                ctx.stokeStyle = 'yellow';
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);//设置起点
-                ctx.lineTo(endX, endY);//画线
-                ctx.closePath();
-                ctx.stroke();
+            if (lowest > d.low_price) {
+                lowest = d.low_price;
             }
         }
+        var itemHeight = height / (highest - lowest);
 
 
-        async function a() {
-            var res =  await fetch("data.json");
-            data = await res.json();
-            kline = data.kline
-            var canvas = document.getElementById('kline1');
-            canvas.itemWidth =  canvas.width / kline.length;
+        for (var index in kline) {
+            var d = kline[index];
+            var low = (d.low_price - lowest) * itemHeight;
+            var high = (d.high_price - lowest) * itemHeight;
+            var open = (d.open_price - lowest) * itemHeight;
+            var close = (d.close_price - lowest) * itemHeight;
+            var left = index * itemWidth;
+            if (d.open_price <= d.close_price) {
+                ctx.fillStyle = "red";
+            } else {
+                ctx.fillStyle = "green";
+            }
+            if (open == close) {
+                ctx.fillRect(left, height - open, itemWidth - 1, 1);
+                ctx.fillRect(left + itemWidth / 2, height - high, 1, high - open);
+                ctx.fillRect(left + itemWidth / 2, height - open, 1, open - low);
+            } else if (open < close) {
+                ctx.fillRect(left, height - close, itemWidth - 1, close - open);
+                ctx.fillRect(left + itemWidth / 2, height - high, 1, high - close);
+                ctx.fillRect(left + itemWidth / 2, height - open, 1, open - low);
+            } else if (open > close) {
+                ctx.fillRect(left, height - open, itemWidth - 1, open - close);
+                ctx.fillRect(left + itemWidth / 2, height - high, 1, high - open);
+                ctx.fillRect(left + itemWidth / 2, height - close, 1, close - low);
+            }
+            // if (d.includeTail){
+            //     ctx.fillStyle = 'rgba(1,1,1,0.5)';
+            //
+            //     var includeIndex = d.includeIndex;
+            //     var left = includeIndex * itemWidth;
+            //     var high = (d.includeHigh - lowest) * itemHeight;
+            //     var low = (d.includeLow - lowest) * itemHeight;
+            //     ctx.fillRect(left, height - high, (index - includeIndex+1) * itemWidth , high - low);
+            // }
 
-            canvas.addEventListener('mousemove', function(event) {
-                    var x = event.pageX;
-                    var y = event.pageY;
-                    var canvas = event.target;
-                    mouseLoc = getPointOnCanvas(canvas, x, y);
+            // ctx.fillStyle = 'black';
+        }
 
-                    var index = parseInt(mouseLoc.x / canvas.itemWidth);
-                    var d = kline[index];
-                    /**
-                    if ( $("#time").innerText == d.day){
+        if (mouseLoc) {
+            ctx.fillStyle = 'black';
+            var index = parseInt(mouseLoc.x / itemWidth);
+            var d = kline[index];
+            var left = (index + 0.5) * itemWidth;
+            ctx.fillRect(left, 0, 0.5, height);
+            ctx.fillRect(0, mouseLoc.y, width, 0.5);
+            var curPrice = (highest - lowest) * (height - mouseLoc.y) / height + lowest;
+            ctx.fillText(curPrice, left, mouseLoc.y);
+        }
+        // draw sub pens
+
+        for (var index in subPens) {
+            var pen = subPens[index];
+            var startKline = barDict[pen.start_datetime];
+            var endKline = barDict[pen.end_datetime];
+            var startX = (startKline.index + 0.5) * itemWidth;
+            var startY = !pen.is_rise ? startKline.include_high : startKline.include_low;
+            startY = (highest - startY) * itemHeight;
+            var endX = (endKline.index + 0.5) * itemWidth;
+            var endY = pen.is_rise ? endKline.include_high : endKline.include_low;
+            endY = (highest - endY) * itemHeight;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);//设置起点
+            ctx.lineTo(endX, endY);//画线
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+        }
+
+        // draw pens
+        for (var index in pens) {
+            var pen = pens[index];
+            var startKline = barDict[pen.start_datetime];
+            var endKline = barDict[pen.end_datetime];
+            var startX = (startKline.index + 0.5) * itemWidth;
+            var startY = !pen.is_rise ? startKline.include_high : startKline.include_low;
+            startY = (highest - startY) * itemHeight;
+            var endX = (endKline.index + 0.5) * itemWidth;
+            var endY = pen.is_rise ? endKline.include_high : endKline.include_low;
+            endY = (highest - endY) * itemHeight;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);//设置起点
+            ctx.lineTo(endX, endY);//画线
+            ctx.strokeStyle = 'blue';
+            ctx.stroke();
+        }
+
+        for (const index in subCentres) {
+            let centre = subCentres[index];
+            var low = height - (centre.low - lowest) * itemHeight;
+            var high = height - (centre.high - lowest) * itemHeight;
+            var left = barDict[centre.start_datetime].index * itemWidth;
+            var right = barDict[centre.end_datetime].index * itemWidth;
+            ctx.beginPath();
+            ctx.moveTo(left, high);
+            ctx.lineTo(right, high);
+            ctx.lineTo(right, low);
+            ctx.lineTo(left, low);
+            ctx.closePath();
+            if (centre.is_rise)
+                ctx.strokeStyle = 'red';
+            else
+                ctx.strokeStyle = 'blue';
+            ctx.stroke();
+        }
+    }
+
+
+    async function a() {
+        var res = await fetch("http://127.0.0.1:5000/kline?interval=" + LEVEL);
+        var data = await res.json();
+        kline = data["bars"];
+        pens = data["pens"];
+        subPens = data["sub_pens"];
+        subCentres = data["sub_centres"];
+
+        barDict = {};
+        let index = 0;
+        for (const bar of kline) {
+            bar.index = index++;
+            barDict[bar.datetime] = bar;
+        }
+
+        penDict = {};
+        for (const pen of pens) {
+            penDict[pen.start_datetime] = pen;
+        }
+
+        var canvas = document.getElementById('kline1');
+        canvas.itemWidth = 1;
+        canvas.width = canvas.itemWidth * kline.length;
+
+        canvas.addEventListener('mousemove', function (event) {
+            var x = event.pageX;
+            var y = event.pageY;
+            var canvas = event.target;
+            mouseLoc = getPointOnCanvas(canvas, x, y);
+
+            let index = parseInt(mouseLoc.x / canvas.itemWidth);
+            var d = kline[index];
+            /**
+             if ( $("#time").innerText == d.day){
                         return;
                     }
-                    **/
-                    $("#no").innerText = index;
-                    $("#time").innerText = d.day;
-                    $("#open").innerText = d.open;
-                    $("#close").innerText = d.close;
-                    $("#high").innerText = d.high;
-                    $("#low").innerText = d.low;
-
-                    drawkline(canvas);
-             },false);
+             **/
+            $("#no").innerText = index;
+            $("#time").innerText = d.datetime;
+            $("#open").innerText = d.open_price;
+            $("#close").innerText = d.close_price;
+            $("#high").innerText = d.high_price;
+            $("#low").innerText = d.low_price;
+            for (let penIndex in subPens) {
+                let subPen = subPens[penIndex];
+                // console.log(subPen)
+                if (subPen.start_datetime <= d.datetime && subPen.end_datetime >= d.datetime) {
+                    $("#subPenIndex").innerText = penIndex;
+                    break
+                }
+            }
             drawkline(canvas);
-        }
-        a();
+        }, false);
+        drawkline(canvas);
+    }
 
-    </script>
+    a();
+
+</script>
 
 </body>
 </html>
