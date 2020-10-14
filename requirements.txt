@@ -4,3 +4,4 @@ tqsdk
 sqlalchemy
 flask
 flask_cors
+jqdatasdk

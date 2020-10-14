@@ -8,7 +8,7 @@ __author__ = "hanweiwei"
 __date__ = "2019-06-06"
 
 # 初始化数据库连接:
-engine = create_engine('sqlite:////Users/hanweiwei/PycharmProjects/QuantChan/chan.db', echo=False)
+engine = create_engine('sqlite:////tmp/ChanMaster/chan.db', echo=False)
 BaseDO.metadata.create_all(engine)
 # 创建DBSession类型:
 DBSession = sessionmaker(bind=engine)
