@@ -236,6 +236,7 @@ class ChanApp(object):
         self._gateway: BaseGateway = gateway(self._event_engine)
 
     def init(self):
+        init_start_time = time_tools.timestamp()
         request = KLineRequest(self._symbol, self._exchange, self._level.get_level(), 800)
         bars = self._gateway.get_kline_data(request)
         self._trend.init_bars(bars)
@@ -243,6 +244,8 @@ class ChanApp(object):
         request = KLineRequest(self._symbol, self._exchange, self._level.get_child_level(), 4000)
         bars = self._gateway.get_kline_data(request)
         self._child_trend.init_bars(bars)
+        init_end_time = time_tools.timestamp()
+        print("init total time %s" % (init_end_time - init_start_time))
 
     def start(self):
         self.init()
