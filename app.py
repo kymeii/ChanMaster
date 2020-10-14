@@ -3,7 +3,8 @@
 import logging
 
 from chan.chan_app import ChanApp
-from chan.level import FiveMinuteLevel
+from chan.level import FiveMinuteLevel, OneMinuteLevel
+from gateway.jq.jq_gateway import JQGateway
 from gateway.tq.tq_gateway import TQGateway
 from trader.constant import Exchange
 
@@ -18,5 +19,5 @@ handler.setFormatter(formatter)
 app_log.addHandler(handler)
 
 if __name__ == '__main__':
-    chan_app = ChanApp(FiveMinuteLevel(), TQGateway, Exchange.SHFE, "rb1910")
+    chan_app = ChanApp(FiveMinuteLevel(), JQGateway, Exchange.AGU, "300253.XSHE")
     chan_app.start()

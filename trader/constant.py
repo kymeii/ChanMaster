@@ -126,6 +126,8 @@ class Exchange(Enum):
     HUOBI = "HUOBI"
     BITFINEX = "BITFINEX"
 
+    AGU = "AGU"
+
 
 class Currency(Enum):
     """

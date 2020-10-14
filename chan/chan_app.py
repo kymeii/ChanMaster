@@ -236,16 +236,16 @@ class ChanApp(object):
         self._gateway: BaseGateway = gateway(self._event_engine)
 
     def init(self):
-        request = KLineRequest(self._symbol, self._exchange, self._level.get_level(), 200)
+        request = KLineRequest(self._symbol, self._exchange, self._level.get_level(), 800)
         bars = self._gateway.get_kline_data(request)
         self._trend.init_bars(bars)
 
-        request = KLineRequest(self._symbol, self._exchange, self._level.get_child_level(), 1000)
+        request = KLineRequest(self._symbol, self._exchange, self._level.get_child_level(), 4000)
         bars = self._gateway.get_kline_data(request)
         self._child_trend.init_bars(bars)
 
     def start(self):
-        # self.init()
+        self.init()
 
         print("init bar finish")
         self._event_engine.register(EVENT_BAR, self.on_bar)

@@ -28,14 +28,15 @@ def kline():
     interval = request.args.get('interval', '5m')
 
     minute_level = parse_level(interval)
-    bars: List[ChanBarDataDO] = chan_bar_data_dao.select("TQ", Exchange.SHFE.value, "rb1910",
+    secure = "300253.XSHE"
+    bars: List[ChanBarDataDO] = chan_bar_data_dao.select("JQ", Exchange.AGU.value, secure,
                                                          minute_level.get_level().value,
                                                          10000)
-    pens = pen_dao.select("TQ", Exchange.SHFE.value, "rb1910", minute_level.get_level().value,
+    pens = pen_dao.select("JQ", Exchange.AGU.value, secure, minute_level.get_level().value,
                           bars[0].datetime)
-    sub_pens = pen_dao.select("TQ", Exchange.SHFE.value, "rb1910", minute_level.get_child_level().value,
+    sub_pens = pen_dao.select("JQ", Exchange.AGU.value, secure, minute_level.get_child_level().value,
                               bars[0].datetime)
-    sub_centres = centre_dao.select("TQ", Exchange.SHFE.value, "rb1910", minute_level.get_level().value,
+    sub_centres = centre_dao.select("JQ", Exchange.AGU.value, secure, minute_level.get_level().value,
                                     bars[0].datetime)
     for pen in sub_pens:
         if pen.interval == "1m":
