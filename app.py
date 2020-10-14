@@ -1,4 +1,7 @@
 # coding=utf-8
+import os
+if os.path.exists("/tmp/ChanMaster/chan.db"):
+    os.remove("/tmp/ChanMaster/chan.db")
 
 import logging
 
@@ -19,8 +22,7 @@ handler.setFormatter(formatter)
 app_log.addHandler(handler)
 
 if __name__ == '__main__':
-    import os
-    if os.path.exists("/tmp/ChanMaster/chan.db"):
-        os.remove("/tmp/ChanMaster/chan.db")
+
+
     chan_app = ChanApp(FiveMinuteLevel(), JQGateway, Exchange.AGU, "300253.XSHE")
     chan_app.start()
