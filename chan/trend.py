@@ -41,7 +41,9 @@ class BaseTrend(object):
         self.is_rise = True
 
     def init_bars(self, bars: List[BarData]):
-        for bar in bars:
+        for index, bar in enumerate(bars):
+            # if index > len(bars) / 2:
+            #     break
             self._append_bar(bar)
 
     def on_bar(self, bar: BarData):
@@ -56,7 +58,7 @@ class BaseTrend(object):
         pass
 
     @abstractmethod
-    def _on_derive_pen(self, start_datetime: datetime, end_datetime: datetime):
+    def _on_derive_pen(self, start_datetime: datetime, end_datetime: datetime, is_rise: bool):
 
         """
         次级别推出本级别的笔
@@ -222,17 +224,18 @@ class BaseTrend(object):
             else:
                 # 第一笔下跌，把第二笔作为线段的开始
                 start_pen = self.pens[signature_sequence_index + 1]
-
         current_pen = self.pens[signature_sequence_index]
+        # print(current_pen.index)
         current_signature = SignatureSequenceItem.create_by_pen(current_pen)
         signature_sequence_index += 2
         while signature_sequence_index < len(self.pens):
             next_signature = SignatureSequenceItem.create_by_pen(self.pens[signature_sequence_index])
             relation, ret_signature = current_signature.grow(next_signature)
-            # print(current_signature.extremum_pen_index, current_signature.high, current_signature.low,
-            #       next_signature.extremum_pen_index,
-            #       next_signature.high, next_signature.low, relation,
-            #       ret_signature.extremum_pen_index)
+            if self.interval == Interval.MINUTE_5:
+                print(current_signature.extremum_pen_index, current_signature.high, current_signature.low,
+                      next_signature.extremum_pen_index,
+                      next_signature.high, next_signature.low, relation,
+                      ret_signature.extremum_pen_index)
             if relation == SignatureSequenceItem.EXTEND:
                 # 线段的延伸
                 current_signature = ret_signature
@@ -249,7 +252,8 @@ class BaseTrend(object):
                 # 推笔
                 if self.parent_trend:
                     self.parent_trend._on_derive_pen(start_pen.start_bar().datetime,
-                                                     divider.last_pen.end_bar().datetime)
+                                                     divider.last_pen.end_bar().datetime,
+                                                     ret_signature.is_rise)
                 signature_sequence_index += 1
                 if signature_sequence_index >= len(self.pens):
                     break

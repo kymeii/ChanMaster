@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 from chan.level import Level
-from chan.object import ChanBarData, Pen, YanZhengFenxing
+from chan.object import ChanBarData, Pen, YanZhengFenxing, DerivePen
 from chan.trend import BaseTrend
 from chan.yanzheng_fenxing_handler import YanZhengFenxingHandler
 from event.engine import EventEngine, Event
@@ -80,16 +80,16 @@ class SubTrend(BaseTrend):
                     self._handle_centre()
                     return True
 
-            print("delete pen", last_pen.index, last_pen.start_bar_index(), last_pen.end_bar_index())
+            # print("delete pen", last_pen.index, last_pen.start_bar_index(), last_pen.end_bar_index())
             self.pens.remove(last_pen)
             self.pen_dao.delete(last_pen)
         return False
 
     def _is_fenxing_match(self, start: int, end: int):
 
-        if end - start == 1:
-            # 次级别要有结构
-            return False
+        # if end - start == 1:
+        #     # 次级别要有结构
+        #     return False
         start_fenxing = self.fenxings[start]
         end_fenxing = self.fenxings[end]
 
@@ -158,33 +158,36 @@ class Trend(BaseTrend):
         self.bars: List[ChanBarData] = []
         self.yanzheng_fenxing_handler: YanZhengFenxingHandler = None
 
-    def _on_derive_pen(self, start_datetime: datetime, end_datetime: datetime):
+    def _on_derive_pen(self, start_datetime: datetime, end_datetime: datetime, is_rise: bool):
+        # 需要修正，推笔不能用分型来表示，应该严格定义到那根K线上
         if self.interval == Interval.MINUTE_5:
             start_datetime = time_tools.m1_2_m5(start_datetime)
             end_datetime = time_tools.m1_2_m5(end_datetime)
         elif self.interval == Interval.MINUTE_30:
+            print("30m pend %s %s" % (start_datetime, end_datetime))
             start_datetime = time_tools.m5_2_m30(start_datetime)
             end_datetime = time_tools.m5_2_m30(end_datetime)
+            print("30m pend %s %s" % (start_datetime, end_datetime))
 
-        start_fenxing = None
-        end_fenxing = None
-        for i in range(len(self.fenxings) - 1, -1, -1):
-            fenxing = self.fenxings[i]
-            for j in range(fenxing.extreme_bar.start_index(), fenxing.extreme_bar.end_index() + 1):
-                bar = self.bars[j]
-                if bar.datetime == end_datetime:
-                    end_fenxing = fenxing
-                elif bar.datetime == start_datetime:
-                    start_fenxing = fenxing
-        if start_fenxing and end_fenxing:
-            pen = Pen(index=len(self.pens), start_fenxing=start_fenxing, end_fenxing=end_fenxing,
-                      is_rise=not start_fenxing.is_top)
+        start_bar = None
+        end_bar = None
+        for i in range(len(self.bars) - 1, -1, -1):
+            bar = self.bars[i]
+            if bar.datetime < start_datetime:
+                break
+            if bar.datetime == end_datetime:
+                end_bar = bar
+            if bar.datetime == start_datetime:
+                start_bar = bar
+        if start_bar and end_bar:
+            pen = DerivePen(index=len(self.pens), _start_bar=start_bar, _end_bar=end_bar,
+                            is_rise=is_rise)
             self.pens.append(pen)
             self.pen_dao.insert(pen)
             self._handle_segments(False)
             self.on_new_pen()
         else:
-            print(start_datetime, end_datetime)
+            # print(start_datetime, end_datetime)
             pass
         self._handle_centre()
 
@@ -200,7 +203,7 @@ class Trend(BaseTrend):
     def on_new_pen(self):
         # 验证分型处理器更新
         self.yanzheng_fenxing_handler = YanZhengFenxingHandler()
-        self.yanzheng_fenxing_handler.init(self)
+        # self.yanzheng_fenxing_handler.init(self)
 
     def on_yanzheng_fenxing_success(self, yanzheng_fenxing: YanZhengFenxing):
         last_pen = self.pens[-1]
@@ -237,11 +240,17 @@ class ChanApp(object):
 
     def init(self):
         init_start_time = time_tools.timestamp()
-        request = KLineRequest(self._symbol, self._exchange, self._level.get_level(), 800)
+
+        sub_klines = 8000
+        request = KLineRequest(self._symbol, self._exchange, self._level.get_parent_level(), int(sub_klines / 5 / 5))
+        bars = self._gateway.get_kline_data(request)
+        self._parent_trend.init_bars(bars)
+
+        request = KLineRequest(self._symbol, self._exchange, self._level.get_level(), int(sub_klines / 5))
         bars = self._gateway.get_kline_data(request)
         self._trend.init_bars(bars)
 
-        request = KLineRequest(self._symbol, self._exchange, self._level.get_child_level(), 4000)
+        request = KLineRequest(self._symbol, self._exchange, self._level.get_child_level(), sub_klines)
         bars = self._gateway.get_kline_data(request)
         self._child_trend.init_bars(bars)
         init_end_time = time_tools.timestamp()

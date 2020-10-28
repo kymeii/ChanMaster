@@ -29,7 +29,9 @@
     MINUTE_1 = "1m";
     MINUTE_5 = "5m";
     MINUTE_30 = "30m";
-    const LEVEL = MINUTE_5;
+    const LEVEL = MINUTE_1;
+    const SHOW_PARENT = true;
+    const ITEM_WIDTH = 4;
 
     $ = function (selector) {
         return document.querySelector(selector);
@@ -100,17 +102,20 @@
                 ctx.fillRect(left + itemWidth / 2, height - high, 1, high - open);
                 ctx.fillRect(left + itemWidth / 2, height - close, 1, close - low);
             }
-            // if (d.includeTail){
-            //     ctx.fillStyle = 'rgba(1,1,1,0.5)';
-            //
-            //     var includeIndex = d.includeIndex;
-            //     var left = includeIndex * itemWidth;
-            //     var high = (d.includeHigh - lowest) * itemHeight;
-            //     var low = (d.includeLow - lowest) * itemHeight;
-            //     ctx.fillRect(left, height - high, (index - includeIndex+1) * itemWidth , high - low);
-            // }
+            /**
+             if (d.includeTail){
+                 ctx.fillStyle = 'rgba(1,1,1,0.5)';
 
-            // ctx.fillStyle = 'black';
+                 var includeIndex = d.includeIndex;
+                 var left = includeIndex * itemWidth;
+                 var high = (d.includeHigh - lowest) * itemHeight;
+                 var low = (d.includeLow - lowest) * itemHeight;
+                 ctx.fillRect(left, height - high, (index - includeIndex+1) * itemWidth , high - low);
+             }
+
+             ctx.fillStyle = 'black';
+             **/
+
         }
 
         if (mouseLoc) {
@@ -142,26 +147,28 @@
             ctx.strokeStyle = 'black';
             ctx.stroke();
         }
+        if(SHOW_PARENT){
+            // draw pens
+            for (var index in pens) {
+                var pen = pens[index];
+                var startKline = barDict[pen.start_datetime];
+                var endKline = barDict[pen.end_datetime];
+                var startX = (startKline.index + 0.5) * itemWidth;
+                var startY = !pen.is_rise ? startKline.high_price : startKline.low_price;
+                startY = (highest - startY) * itemHeight;
+                var endX = (endKline.index + 0.5) * itemWidth;
+                var endY = pen.is_rise ? endKline.high_price : endKline.low_price;
+                endY = (highest - endY) * itemHeight;
 
-        // draw pens
-        for (var index in pens) {
-            var pen = pens[index];
-            var startKline = barDict[pen.start_datetime];
-            var endKline = barDict[pen.end_datetime];
-            var startX = (startKline.index + 0.5) * itemWidth;
-            var startY = !pen.is_rise ? startKline.include_high : startKline.include_low;
-            startY = (highest - startY) * itemHeight;
-            var endX = (endKline.index + 0.5) * itemWidth;
-            var endY = pen.is_rise ? endKline.include_high : endKline.include_low;
-            endY = (highest - endY) * itemHeight;
-
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);//设置起点
-            ctx.lineTo(endX, endY);//画线
-            ctx.strokeStyle = 'blue';
-            ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);//设置起点
+                ctx.lineTo(endX, endY);//画线
+                ctx.strokeStyle = 'blue';
+                ctx.stroke();
+            }
         }
 
+        /**
         for (const index in subCentres) {
             let centre = subCentres[index];
             var low = height - (centre.low - lowest) * itemHeight;
@@ -180,6 +187,7 @@
                 ctx.strokeStyle = 'blue';
             ctx.stroke();
         }
+        **/
     }
 
 
@@ -204,7 +212,7 @@
         }
 
         var canvas = document.getElementById('kline1');
-        canvas.itemWidth = 1;
+        canvas.itemWidth = ITEM_WIDTH;
         canvas.width = canvas.itemWidth * kline.length;
 
         canvas.addEventListener('mousemove', function (event) {

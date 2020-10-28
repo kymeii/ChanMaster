@@ -24,5 +24,5 @@ app_log.addHandler(handler)
 if __name__ == '__main__':
 
 
-    chan_app = ChanApp(FiveMinuteLevel(), JQGateway, Exchange.AGU, "300253.XSHE")
+    chan_app = ChanApp(FiveMinuteLevel(), JQGateway, Exchange.AGU, "603568.XSHG")
     chan_app.start()

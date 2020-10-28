@@ -75,7 +75,7 @@ class JQGateway(BaseGateway):
 
         df = get_bars(kline_request.symbol, kline_request.data_length, unit=kline_request.bar_interval.value,
                       fields=['date', 'open', 'high', 'low', 'close','volume'],
-                      include_now=False, end_dt=None, fq_ref_date=None, df=True)
+                      include_now=False, end_dt=None, fq_ref_date=datetime.date.today(), df=True)
         data: List[BarData] = []
         for ix, row in df.iterrows():
             bar = self.dfrow2bar(exchange, kline_request.symbol, interval, row)
@@ -130,7 +130,6 @@ class JQGateway(BaseGateway):
         # print(bars)
         while True:
             import time
-            time.sleep(10000)
             # self._tqapi.wait_update()
             # for i, bar_df in enumerate(self._bars_df):
             #     if self._tqapi.is_changing(bar_df.iloc[-1], "datetime"):

@@ -28,7 +28,7 @@ def kline():
     interval = request.args.get('interval', '5m')
 
     minute_level = parse_level(interval)
-    secure = "300253.XSHE"
+    secure = "603568.XSHG"
     bars: List[ChanBarDataDO] = chan_bar_data_dao.select("JQ", Exchange.AGU.value, secure,
                                                          minute_level.get_level().value,
                                                          10000)

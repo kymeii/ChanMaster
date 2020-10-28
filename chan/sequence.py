@@ -74,12 +74,12 @@ class SignatureSequenceItem(object):
                 # if self.is_rise:
                 ret_signature = next_signature
                 # 笔破坏
-                # if self.is_rise:
-                #     ret_signature = SignatureSequenceItem(self.is_rise, next_signature.extremum_pen_index,
-                #                                           next_signature.high,
-                #                                           self.low)
-                # else:
-                #     ret_signature = SignatureSequenceItem(self.is_rise, next_signature.extremum_pen_index,
-                #                                           self.high,
-                #                                           next_signature.low)
+                if self.is_rise:
+                    ret_signature = SignatureSequenceItem(self.is_rise, next_signature.extremum_pen_index,
+                                                          next_signature.high,
+                                                          self.low)
+                else:
+                    ret_signature = SignatureSequenceItem(self.is_rise, next_signature.extremum_pen_index,
+                                                          self.high,
+                                                          next_signature.low)
             return relation, ret_signature

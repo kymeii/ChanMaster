@@ -42,7 +42,22 @@ class Fenxing(object):
 
 
 @dataclass
-class Pen(object):
+class BasePen(object):
+    def start_bar(self):
+        raise NotImplementedError
+
+    def end_bar(self):
+        raise NotImplementedError
+
+    def high(self):
+        raise NotImplementedError
+
+    def low(self):
+        raise NotImplementedError
+
+
+@dataclass
+class Pen(BasePen):
     index: int
     start_fenxing: Fenxing
     end_fenxing: Fenxing
@@ -74,12 +89,38 @@ class Pen(object):
 
 
 @dataclass
+class DerivePen(BasePen):
+    index: int
+    _start_bar: ChanBarData
+    _end_bar: ChanBarData
+    is_rise: bool = False
+
+    def start_bar(self):
+        return self._start_bar
+
+    def end_bar(self):
+        return self._end_bar
+
+    def high(self):
+        if self.is_rise:
+            return self.end_bar().include_high
+        else:
+            return self.start_bar().include_high
+
+    def low(self):
+        if self.is_rise:
+            return self.start_bar().include_low
+        else:
+            return self.end_bar().include_low
+
+
+@dataclass
 class Divider(object):
     """
     同级别分界线
     """
     last_pen: Pen
-    confirm_pen:Pen
+    confirm_pen: Pen
 
 
 @dataclass
